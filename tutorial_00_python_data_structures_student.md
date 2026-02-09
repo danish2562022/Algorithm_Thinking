@@ -360,6 +360,309 @@ print(f"Dict size: {sys.getsizeof(dict_example)} bytes")
 
 *Amortized O(1) for append, O(n) for insert/delete at arbitrary position
 
+## Measuring Execution Time
+
+Understanding how long operations take is crucial for writing efficient code. Python provides several ways to measure execution time.
+
+### Using `time.time()`
+
+```python
+import time
+
+# Measure time for list membership check
+my_list = list(range(1000000))
+target = 999999
+
+start_time = time.time()
+result = target in my_list
+end_time = time.time()
+
+elapsed = end_time - start_time
+print(f"List membership check took {elapsed:.6f} seconds")
+print(f"Result: {result}")
+```
+
+### Using `timeit` Module (Recommended)
+
+The `timeit` module provides more accurate timing by running code multiple times and averaging:
+
+```python
+import timeit
+
+# Compare list vs set membership
+my_list = list(range(100000))
+my_set = set(range(100000))
+target = 99999
+
+# Time list membership (O(n))
+list_time = timeit.timeit(lambda: target in my_list, number=1000)
+print(f"List membership (1000 runs): {list_time:.6f} seconds")
+print(f"Average per run: {list_time/1000:.9f} seconds")
+
+# Time set membership (O(1))
+set_time = timeit.timeit(lambda: target in my_set, number=1000)
+print(f"Set membership (1000 runs): {set_time:.6f} seconds")
+print(f"Average per run: {set_time/1000:.9f} seconds")
+
+print(f"\nSet is {list_time/set_time:.1f}x faster!")
+```
+
+### Practical Example: Comparing Data Structure Operations
+
+```python
+import timeit
+
+# Setup
+n = 100000
+test_list = list(range(n))
+test_set = set(range(n))
+test_dict = {i: i*2 for i in range(n)}
+
+# Test 1: Membership checking
+print("=== Membership Testing ===")
+list_membership = timeit.timeit(lambda: n-1 in test_list, number=1000)
+set_membership = timeit.timeit(lambda: n-1 in test_set, number=1000)
+dict_membership = timeit.timeit(lambda: n-1 in test_dict, number=1000)
+
+print(f"List:  {list_membership:.6f} seconds (O(n))")
+print(f"Set:   {set_membership:.6f} seconds (O(1))")
+print(f"Dict:  {dict_membership:.6f} seconds (O(1))")
+print(f"Set is {list_membership/set_membership:.1f}x faster than list")
+
+# Test 2: Adding elements
+print("\n=== Adding Elements ===")
+list_append = timeit.timeit(lambda: test_list.append(999999), number=10000)
+set_add = timeit.timeit(lambda: test_set.add(999999), number=10000)
+dict_set = timeit.timeit(lambda: test_dict.update({999999: 1999998}), number=10000)
+
+print(f"List append: {list_append:.6f} seconds")
+print(f"Set add:     {set_add:.6f} seconds")
+print(f"Dict update: {dict_set:.6f} seconds")
+
+# Test 3: Iteration
+print("\n=== Iteration ===")
+list_iter = timeit.timeit(lambda: [x for x in test_list[:1000]], number=1000)
+set_iter = timeit.timeit(lambda: [x for x in list(test_set)[:1000]], number=1000)
+dict_iter = timeit.timeit(lambda: [v for k, v in list(test_dict.items())[:1000]], number=1000)
+
+print(f"List iteration:  {list_iter:.6f} seconds")
+print(f"Set iteration:   {set_iter:.6f} seconds")
+print(f"Dict iteration:  {dict_iter:.6f} seconds")
+```
+
+**Run this code and observe the timing differences!** You'll see that sets and dictionaries are much faster for membership testing, while lists are faster for iteration.
+
+## NumPy vs Pure Python: Performance Comparison
+
+NumPy (Numerical Python) is a powerful library for numerical computations. It's significantly faster than pure Python for array operations. Let's see why!
+
+### Why NumPy is Faster
+
+1. **Vectorization**: Operations are applied to entire arrays at once, not element-by-element
+2. **C Implementation**: Core operations are written in C/C++, which is much faster than Python
+3. **Memory Efficiency**: Arrays are stored contiguously in memory, improving cache performance
+4. **No Type Checking**: NumPy arrays have fixed types, eliminating Python's dynamic type checking overhead
+
+### Comparison: Array Operations
+
+```python
+import numpy as np
+import timeit
+
+# Create large arrays/lists
+size = 1000000
+python_list = list(range(size))
+numpy_array = np.arange(size)
+
+# Test 1: Element-wise addition
+print("=== Element-wise Addition ===")
+
+def python_add():
+    return [x + 10 for x in python_list]
+
+def numpy_add():
+    return numpy_array + 10
+
+python_time = timeit.timeit(python_add, number=10)
+numpy_time = timeit.timeit(numpy_add, number=10)
+
+print(f"Python list: {python_time:.6f} seconds")
+print(f"NumPy array: {numpy_time:.6f} seconds")
+print(f"NumPy is {python_time/numpy_time:.1f}x faster!")
+
+# Test 2: Sum of elements
+print("\n=== Sum of Elements ===")
+
+def python_sum():
+    return sum(python_list)
+
+def numpy_sum():
+    return np.sum(numpy_array)
+
+python_time = timeit.timeit(python_sum, number=100)
+numpy_time = timeit.timeit(numpy_sum, number=100)
+
+print(f"Python sum(): {python_time:.6f} seconds")
+print(f"NumPy sum():  {numpy_time:.6f} seconds")
+print(f"NumPy is {python_time/numpy_time:.1f}x faster!")
+
+# Test 3: Finding maximum
+print("\n=== Finding Maximum ===")
+
+def python_max():
+    return max(python_list)
+
+def numpy_max():
+    return np.max(numpy_array)
+
+python_time = timeit.timeit(python_max, number=100)
+numpy_time = timeit.timeit(numpy_max, number=100)
+
+print(f"Python max(): {python_time:.6f} seconds")
+print(f"NumPy max():  {numpy_time:.6f} seconds")
+print(f"NumPy is {python_time/numpy_time:.1f}x faster!")
+```
+
+### Comparison: Mathematical Operations
+
+```python
+import numpy as np
+import timeit
+import math
+
+size = 1000000
+python_list = [i * 0.1 for i in range(size)]
+numpy_array = np.arange(size) * 0.1
+
+# Test: Square root of all elements
+print("=== Square Root Operation ===")
+
+def python_sqrt():
+    return [math.sqrt(x) for x in python_list]
+
+def numpy_sqrt():
+    return np.sqrt(numpy_array)
+
+python_time = timeit.timeit(python_sqrt, number=10)
+numpy_time = timeit.timeit(numpy_sqrt, number=10)
+
+print(f"Python: {python_time:.6f} seconds")
+print(f"NumPy:  {numpy_time:.6f} seconds")
+print(f"NumPy is {python_time/numpy_time:.1f}x faster!")
+
+# Test: Element-wise multiplication
+print("\n=== Element-wise Multiplication ===")
+
+def python_multiply():
+    return [x * 2.5 for x in python_list]
+
+def numpy_multiply():
+    return numpy_array * 2.5
+
+python_time = timeit.timeit(python_multiply, number=10)
+numpy_time = timeit.timeit(numpy_multiply, number=10)
+
+print(f"Python: {python_time:.6f} seconds")
+print(f"NumPy:  {numpy_time:.6f} seconds")
+print(f"NumPy is {python_time/numpy_time:.1f}x faster!")
+```
+
+### Why Pure Python Takes More Time
+
+1. **Interpreted vs Compiled**: Python is interpreted line-by-line, while NumPy operations are pre-compiled C code
+2. **Type Checking Overhead**: Python checks types at runtime for every operation
+3. **Memory Overhead**: Python lists store pointers to objects, while NumPy arrays store raw data
+4. **Loop Overhead**: Python loops have overhead for each iteration (checking conditions, incrementing counters)
+5. **No Vectorization**: Pure Python processes elements one at a time, while NumPy uses SIMD (Single Instruction Multiple Data) instructions
+
+### Visual Comparison Example
+
+```python
+import numpy as np
+import timeit
+
+# Create arrays
+size = 1000000
+python_list = list(range(size))
+numpy_array = np.arange(size, dtype=np.int32)
+
+print("=== Comprehensive Performance Test ===\n")
+
+operations = [
+    ("Addition", lambda: [x + 1 for x in python_list], lambda: numpy_array + 1),
+    ("Multiplication", lambda: [x * 2 for x in python_list], lambda: numpy_array * 2),
+    ("Sum", lambda: sum(python_list), lambda: np.sum(numpy_array)),
+    ("Mean", lambda: sum(python_list) / len(python_list), lambda: np.mean(numpy_array)),
+]
+
+for op_name, python_func, numpy_func in operations:
+    python_time = timeit.timeit(python_func, number=10)
+    numpy_time = timeit.timeit(numpy_func, number=10)
+    speedup = python_time / numpy_time if numpy_time > 0 else 0
+    
+    print(f"{op_name:15} | Python: {python_time:8.6f}s | NumPy: {numpy_time:8.6f}s | Speedup: {speedup:6.1f}x")
+```
+
+**Run this code to see dramatic performance differences!** NumPy is typically 10-100x faster for numerical operations.
+
+### When to Use NumPy vs Pure Python
+
+**Use NumPy when:**
+- Working with large numerical arrays
+- Performing mathematical operations on arrays
+- Need maximum performance for numerical computations
+- Working with multi-dimensional data
+
+**Use Pure Python when:**
+- Working with small datasets
+- Need heterogeneous data types
+- Operations don't involve numerical computations
+- Code readability and simplicity are priorities
+
+### Memory Comparison
+
+```python
+import sys
+import numpy as np
+
+size = 1000000
+
+python_list = list(range(size))
+numpy_array = np.arange(size, dtype=np.int32)
+
+print("=== Memory Usage ===")
+print(f"Python list: {sys.getsizeof(python_list) / (1024*1024):.2f} MB")
+print(f"NumPy array: {numpy_array.nbytes / (1024*1024):.2f} MB")
+print(f"NumPy uses {sys.getsizeof(python_list) / numpy_array.nbytes:.1f}x less memory!")
+
+# Python list stores pointers (8 bytes each on 64-bit systems)
+# NumPy array stores actual integers (4 bytes each for int32)
+```
+
+### Practical Exercise: Measure Your Own Operations
+
+Try measuring the time for these operations yourself:
+
+```python
+import timeit
+import numpy as np
+
+# Exercise: Compare these operations
+size = 100000
+
+# 1. Create list vs numpy array
+python_list = list(range(size))
+numpy_array = np.arange(size)
+
+# TODO: Measure creation time
+# TODO: Measure memory usage
+# TODO: Measure access time (accessing middle element)
+# TODO: Measure slicing time
+# TODO: Measure sorting time
+
+# Write your timing code here!
+```
+
 ## Practical Examples
 
 ### Example 1: Choosing the Right Structure
