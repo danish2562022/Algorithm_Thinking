@@ -426,6 +426,3 @@ Remember: The process of solving is more important than getting the answer immed
 | Bubble sort | O(n²) | Simple but slow |
 | Nested loops | O(n²) | Common pattern |
 
-## Next Steps
-
-In the next tutorial, we'll explore common algorithmic patterns like Divide and Conquer and Greedy algorithms, and learn when to use them.
